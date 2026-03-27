@@ -1,0 +1,31 @@
+name: sre-cloud-agent
+description: An environment simulating a cloud infrastructure engineer managing server latency and costs.
+version: 1.0.0
+tags: [cloud, sre, infrastructure, devops]
+
+# Define the entry point
+entry_point: env:SREEnv
+
+# Define tasks and their grading criteria
+tasks:
+  - id: task_1_easy
+    name: Stability Check
+    description: Keep the system running for 50 steps with ample budget.
+    config:
+      max_steps: 50
+      initial_budget: 200
+    grader: baseline.py # Reference to the script that generates the score
+    
+  - id: task_2_medium
+    name: Traffic Management
+    description: Handle standard traffic fluctuations over 100 steps.
+    config:
+      max_steps: 100
+      initial_budget: 150
+      
+  - id: task_3_hard
+    name: Crisis Mode
+    description: Manage a long-running system with a very tight budget.
+    config:
+      max_steps: 200
+      initial_budget: 100
