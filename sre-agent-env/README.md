@@ -1,3 +1,13 @@
+---
+title: SRE Cloud Agent Auto-Scaler
+emoji: 🚀
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # SRE Cloud Agent Environment
 
 An OpenEnv-compatible environment where an AI agent acts as a Site Reliability Engineer (SRE).
