@@ -1,7 +1,7 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Dict, Any, Tuple, List
 
 # --- Typed Models (Requirement: Typed Models) ---
@@ -13,6 +13,17 @@ class SREState(BaseModel):
     is_crashed: bool
     current_traffic: float
     budget_remaining: float
+
+
+class SREAction(BaseModel):
+    action_type: int = Field(
+        ..., 
+        ge=0,
+        le=3,
+        description=(
+            "Action type where 0 is Do Nothing, 1 is Scale Up, 2 is Scale Down, and 3 is Restart."
+        ),
+    )
 
 # --- The Environment ---
 class SREEnv(gym.Env):
@@ -41,7 +52,7 @@ class SREEnv(gym.Env):
             low=0, high=1, shape=(7,), dtype=np.float32
         )
 
-        self.state = None
+        self._state = None
         self.current_step = 0
         
     def reset(self, seed=None, options=None) -> Tuple[np.ndarray, Dict]:
@@ -129,7 +140,7 @@ class SREEnv(gym.Env):
             truncated = True
             
         # Update internal state object
-        self.state = {
+        self._state = {
             "cpu": cpu_usage,
             "mem": memory_usage,
             "servers": self.active_servers,
@@ -141,41 +152,44 @@ class SREEnv(gym.Env):
 
         return self._get_obs(), reward, terminated, truncated, {"state": self._get_state_model().dict()}
 
+    def state(self) -> SREState:
+        return self._get_state_model()
+
     def _get_obs(self) -> np.ndarray:
         # Returns normalized numpy array
-        if self.state is None:
+        if self._state is None:
             return np.zeros(7, dtype=np.float32)
         
         # Normalize latency for observation (log scale helps agents learn better)
-        norm_latency = np.log1p(self.state["latency"]) / 10.0
+        norm_latency = np.log1p(self._state["latency"]) / 10.0
         
         return np.array([
-            self.state["cpu"],
-            self.state["mem"],
-            self.state["servers"] / self.max_servers,
+            self._state["cpu"],
+            self._state["mem"],
+            self._state["servers"] / self.max_servers,
             norm_latency,
-            self.state["crashed"],
-            self.state["traffic"],
-            self.state["budget"] / self.initial_budget
+            self._state["crashed"],
+            self._state["traffic"],
+            self._state["budget"] / self.initial_budget
         ], dtype=np.float32)
 
     def _get_state_model(self) -> SREState:
-        if self.state is None:
+        if self._state is None:
             return SREState(
                 cpu_usage=0, memory_usage=0, active_servers=0, 
                 latency_ms=0, is_crashed=False, current_traffic=0, budget_remaining=0
             )
         return SREState(
-            cpu_usage=self.state["cpu"],
-            memory_usage=self.state["mem"],
-            active_servers=int(self.state["servers"]),
-            latency_ms=self.state["latency"],
-            is_crashed=bool(self.state["crashed"]),
-            current_traffic=self.state["traffic"],
-            budget_remaining=self.state["budget"]
+            cpu_usage=self._state["cpu"],
+            memory_usage=self._state["mem"],
+            active_servers=int(self._state["servers"]),
+            latency_ms=self._state["latency"],
+            is_crashed=bool(self._state["crashed"]),
+            current_traffic=self._state["traffic"],
+            budget_remaining=self._state["budget"]
         )
 
     def render(self):
-        if self.state:
-            status = "CRASHED" if self.state["crashed"] else "ONLINE"
-            print(f"Step {self.current_step}: Servers={self.state['servers']}, CPU={self.state['cpu']:.2f}, Latency={self.state['latency']:.0f}ms, Status={status}")
+        if self._state:
+            status = "CRASHED" if self._state["crashed"] else "ONLINE"
+            print(f"Step {self.current_step}: Servers={self._state['servers']}, CPU={self._state['cpu']:.2f}, Latency={self._state['latency']:.0f}ms, Status={status}")

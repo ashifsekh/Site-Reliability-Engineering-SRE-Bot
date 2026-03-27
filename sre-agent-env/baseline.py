@@ -41,8 +41,12 @@ def run_baseline(task_name, config):
         # Optional: Render for debugging
         # env.render()
         
-    print(f"Task: {task_name} | Final Score: {total_reward:.2f}")
-    return total_reward
+    max_possible_reward = config["max_steps"] * 1.0
+    normalized_score = float(np.clip(total_reward / max_possible_reward, 0.0, 1.0))
+
+    print(f"Task: {task_name} | Total Reward: {total_reward:.2f}")
+    print(f"Task: {task_name} | Normalized Score: {normalized_score:.4f}")
+    return normalized_score
 
 if __name__ == "__main__":
     # Define the 3 Tasks (Easy -> Hard)
